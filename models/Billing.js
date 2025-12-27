@@ -13,6 +13,10 @@ const billingSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Studio'
     },
+    isCredit: {
+        type: Boolean,
+        default: false // 0 for Debit, 1 for Credit
+    },
     amount: {
         type: Number,
         required: [true, 'Amount is required']

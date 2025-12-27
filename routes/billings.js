@@ -41,20 +41,33 @@ router.get('/', async (req, res) => {
     }
 });
 
-// READ - Get billing entries by Studio ID
+// READ - Get billing entries by Studio ID Wise
 router.get('/studio/:studioId', async (req, res) => {
     try {
         const billings = await Billing.find({ studio: req.params.studioId })
             .populate('operator', 'name phoneNumber expertise')
             .populate('studio', 'studioName studioLocation');
 
-        // Calculate total amount for this studio
-        const totalAmount = billings.reduce((sum, billing) => sum + billing.amount, 0);
+        // Calculate totals
+        let totalCredit = 0;
+        let totalDebit = 0;
+
+        billings.forEach(billing => {
+            if (billing.isCredit) {
+                totalCredit += billing.amount;
+            } else {
+                totalDebit += billing.amount;
+            }
+        });
+
+        const netAmount = totalCredit - totalDebit;
 
         res.status(200).json({
             success: true,
             count: billings.length,
-            totalAmount: totalAmount,
+            totalCredit,
+            totalDebit,
+            netAmount,
             data: billings
         });
     } catch (error) {
@@ -73,13 +86,26 @@ router.get('/operator/:operatorId', async (req, res) => {
             .populate('operator', 'name phoneNumber expertise')
             .populate('studio', 'studioName studioLocation');
 
-        // Calculate total amount for this operator
-        const totalAmount = billings.reduce((sum, billing) => sum + billing.amount, 0);
+        // Calculate totals
+        let totalCredit = 0;
+        let totalDebit = 0;
+
+        billings.forEach(billing => {
+            if (billing.isCredit) {
+                totalCredit += billing.amount;
+            } else {
+                totalDebit += billing.amount;
+            }
+        });
+
+        const netAmount = totalCredit - totalDebit;
 
         res.status(200).json({
             success: true,
             count: billings.length,
-            totalAmount: totalAmount,
+            totalCredit,
+            totalDebit,
+            netAmount,
             data: billings
         });
     } catch (error) {
@@ -118,13 +144,26 @@ router.get('/studio/:studioId/date', async (req, res) => {
             .populate('studio', 'studioName studioLocation')
             .sort({ date: -1 }); // Sort by date descending
 
-        // Calculate total amount
-        const totalAmount = billings.reduce((sum, billing) => sum + billing.amount, 0);
+        // Calculate totals
+        let totalCredit = 0;
+        let totalDebit = 0;
+
+        billings.forEach(billing => {
+            if (billing.isCredit) {
+                totalCredit += billing.amount;
+            } else {
+                totalDebit += billing.amount;
+            }
+        });
+
+        const netAmount = totalCredit - totalDebit;
 
         res.status(200).json({
             success: true,
             count: billings.length,
-            totalAmount: totalAmount,
+            totalCredit,
+            totalDebit,
+            netAmount,
             dateRange: {
                 startDate: startDate || 'Not specified',
                 endDate: endDate || 'Not specified'
@@ -167,13 +206,26 @@ router.get('/operator/:operatorId/date', async (req, res) => {
             .populate('studio', 'studioName studioLocation')
             .sort({ date: -1 }); // Sort by date descending
 
-        // Calculate total amount
-        const totalAmount = billings.reduce((sum, billing) => sum + billing.amount, 0);
+        // Calculate totals
+        let totalCredit = 0;
+        let totalDebit = 0;
+
+        billings.forEach(billing => {
+            if (billing.isCredit) {
+                totalCredit += billing.amount;
+            } else {
+                totalDebit += billing.amount;
+            }
+        });
+
+        const netAmount = totalCredit - totalDebit;
 
         res.status(200).json({
             success: true,
             count: billings.length,
-            totalAmount: totalAmount,
+            totalCredit,
+            totalDebit,
+            netAmount,
             dateRange: {
                 startDate: startDate || 'Not specified',
                 endDate: endDate || 'Not specified'
