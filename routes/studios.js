@@ -39,6 +39,35 @@ router.get('/', async (req, res) => {
     }
 });
 
+// SEARCH - Search studios by name
+router.get('/search', async (req, res) => {
+    try {
+        const { name } = req.query;
+        if (!name) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a name to search for'
+            });
+        }
+
+        const studios = await Studio.find({
+            studioName: { $regex: name, $options: 'i' }
+        });
+
+        res.status(200).json({
+            success: true,
+            count: studios.length,
+            data: studios
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error searching studios',
+            error: error.message
+        });
+    }
+});
+
 // READ - Get a single studio by ID
 router.get('/:id', async (req, res) => {
     try {
