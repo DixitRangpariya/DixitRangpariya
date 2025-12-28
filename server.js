@@ -29,21 +29,21 @@ app.get('/', (req, res) => {
                 'GET /api/operators': 'Get all operators',
                 'GET /api/operators/:id': 'Get a single operator',
                 'POST /api/operators': 'Create a new operator',
-                'PUT /api/operators/:id': 'Update an operator',
+                'POST /api/operators/update/:id': 'Update an operator',
                 'DELETE /api/operators/:id': 'Delete an operator'
             },
             studios: {
                 'GET /api/studios': 'Get all studios',
                 'GET /api/studios/:id': 'Get a single studio',
                 'POST /api/studios': 'Create a new studio',
-                'PUT /api/studios/:id': 'Update a studio',
+                'POST /api/studios/update/:id': 'Update a studio',
                 'DELETE /api/studios/:id': 'Delete a studio'
             },
             billings: {
                 'GET /api/billings': 'Get all billing entries',
                 'GET /api/billings/:id': 'Get a single billing entry',
                 'POST /api/billings': 'Create a new billing entry',
-                'PUT /api/billings/:id': 'Update a billing entry',
+                'POST /api/billings/update/:id': 'Update a billing entry',
                 'DELETE /api/billings/:id': 'Delete a billing entry'
             }
         }

@@ -92,7 +92,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // UPDATE - Update an operator by ID
-router.put('/:id', async (req, res) => {
+router.post('/:id', async (req, res) => {
     try {
         const operator = await Operator.findByIdAndUpdate(
             req.params.id,

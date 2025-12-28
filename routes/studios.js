@@ -92,7 +92,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // UPDATE - Update a studio by ID
-router.put('/:id', async (req, res) => {
+router.post('/:id', async (req, res) => {
     try {
         const studio = await Studio.findByIdAndUpdate(
             req.params.id,
