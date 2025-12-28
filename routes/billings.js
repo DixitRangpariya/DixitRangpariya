@@ -267,7 +267,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // UPDATE - Update a billing entry by ID
-router.post('/:id', async (req, res) => {
+router.post('/update/:id', async (req, res) => {
     try {
         const billing = await Billing.findByIdAndUpdate(
             req.params.id,
