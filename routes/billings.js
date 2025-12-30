@@ -320,4 +320,120 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// EXPORT - Export billing entries by Studio ID
+router.post('/export/studio', async (req, res) => {
+    try {
+        const { studioId, startDate, endDate, paymentStatus, isCredit } = req.body;
+
+        if (!studioId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Studio ID is required'
+            });
+        }
+
+        const query = { studio: studioId };
+
+        if (startDate || endDate) {
+            query.date = {};
+            if (startDate) query.date.$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setDate(end.getDate() + 1);
+                query.date.$lt = end;
+            }
+        }
+
+        if (paymentStatus !== undefined) {
+            query.paymentStatus = paymentStatus;
+        }
+
+        if (isCredit !== undefined) {
+            query.isCredit = isCredit;
+        }
+
+        const billings = await Billing.find(query)
+            .populate('operator', 'name phoneNumber expertise')
+            .populate('studio', 'studioName studioLocation')
+            .sort({ date: -1 });
+
+        let totalAmount = 0;
+        billings.forEach(bill => {
+            totalAmount += bill.amount;
+        });
+
+        res.status(200).json({
+            success: true,
+            count: billings.length,
+            totalAmount,
+            data: billings
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error exporting studio billings',
+            error: error.message
+        });
+    }
+});
+
+// EXPORT - Export billing entries by Operator ID
+router.post('/export/operator', async (req, res) => {
+    try {
+        const { operatorId, startDate, endDate, paymentStatus, isCredit } = req.body;
+
+        if (!operatorId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Operator ID is required'
+            });
+        }
+
+        const query = { operator: operatorId };
+
+        if (startDate || endDate) {
+            query.date = {};
+            if (startDate) query.date.$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setDate(end.getDate() + 1);
+                query.date.$lt = end;
+            }
+        }
+
+        if (paymentStatus !== undefined) {
+            query.paymentStatus = paymentStatus;
+        }
+
+        if (isCredit !== undefined) {
+            query.isCredit = isCredit;
+        }
+
+        const billings = await Billing.find(query)
+            .populate('operator', 'name phoneNumber expertise')
+            .populate('studio', 'studioName studioLocation')
+            .sort({ date: -1 });
+
+        let totalAmount = 0;
+        billings.forEach(bill => {
+            totalAmount += bill.amount;
+        });
+
+        res.status(200).json({
+            success: true,
+            count: billings.length,
+            totalAmount,
+            data: billings
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error exporting operator billings',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
