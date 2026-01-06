@@ -26,6 +26,13 @@ const billingSchema = new mongoose.Schema({
         ref: 'Operator',
         required: [true, 'Operator is required']
     },
+    otherOperator: {
+        type: String,
+        trim: true
+    },
+    operatorAmount: {
+        type: Number
+    },
     place: {
         type: String,
         trim: true

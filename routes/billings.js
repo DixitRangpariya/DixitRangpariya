@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Billing = require('../models/Billing');
+const OperatorPayment = require('../models/OperatorPayment');
+const StudioPayment = require('../models/StudioPayment');
 
 // CREATE - Add a new billing entry
 router.post('/', async (req, res) => {
@@ -48,27 +50,38 @@ router.get('/studio/:studioId', async (req, res) => {
             .populate('operator', 'name phoneNumber expertise')
             .populate('studio', 'studioName studioLocation');
 
-        // Calculate totals
-        let totalCredit = 0;
-        let totalDebit = 0;
+        // Calculate totals from Ledger
+        let totalBilled = 0;
 
         billings.forEach(billing => {
-            if (billing.isCredit) {
-                totalCredit += billing.amount;
-            } else {
-                totalDebit += billing.amount;
+            totalBilled += billing.amount;
+        });
+
+        // Get payments from StudioPayment
+        const payments = await StudioPayment.find({ studio: req.params.studioId });
+        let totalReceived = 0;
+        let totalPaid = 0;
+
+        payments.forEach(payment => {
+            if (payment.type === 0) { // Received
+                totalReceived += payment.amount;
+            } else if (payment.type === 1) { // Paid
+                totalPaid += payment.amount;
             }
         });
 
-        const netAmount = totalCredit - totalDebit;
+        // Net Pending = Billed - Received + Paid (Positive means they owe us)
+        const netPending = totalBilled - totalReceived + totalPaid;
 
         res.status(200).json({
             success: true,
             count: billings.length,
-            totalCredit,
-            totalDebit,
-            netAmount,
-            data: billings
+            totalBilled,
+            totalReceived,
+            totalPaid,
+            netPending,
+            data: billings,
+            payments // Optional
         });
     } catch (error) {
         res.status(500).json({
@@ -86,26 +99,28 @@ router.get('/operator/:operatorId', async (req, res) => {
             .populate('operator', 'name phoneNumber expertise')
             .populate('studio', 'studioName studioLocation');
 
-        // Calculate totals
-        let totalCredit = 0;
-        let totalDebit = 0;
+        // Calculate totals from Ledger
+        let totalEarnings = 0;
 
         billings.forEach(billing => {
-            if (billing.isCredit) {
-                totalCredit += billing.amount;
-            } else {
-                totalDebit += billing.amount;
-            }
+            totalEarnings += (billing.operatorAmount || 0);
         });
 
-        const netAmount = totalCredit - totalDebit;
+        // Get total paid amount from OperatorPayment
+        const payments = await OperatorPayment.find({ operator: req.params.operatorId });
+        let totalPaid = 0;
+        payments.forEach(payment => {
+            totalPaid += payment.amount;
+        });
+
+        const pendingAmount = totalEarnings - totalPaid;
 
         res.status(200).json({
             success: true,
             count: billings.length,
-            totalCredit,
-            totalDebit,
-            netAmount,
+            totalEarnings,
+            totalPaid,
+            pendingAmount,
             data: billings
         });
     } catch (error) {
@@ -118,153 +133,153 @@ router.get('/operator/:operatorId', async (req, res) => {
 });
 
 // READ - Get billing entries by Studio ID with Date Range
-router.get('/studio/:studioId/date', async (req, res) => {
-    try {
-        const { startDate, endDate } = req.query;
+// router.get('/studio/:studioId/date', async (req, res) => {
+//     try {
+//         const { startDate, endDate } = req.query;
 
-        // Build query filter
-        const filter = { studio: req.params.studioId };
+//         // Build query filter
+//         const filter = { studio: req.params.studioId };
 
-        // Add date range filter if provided
-        if (startDate || endDate) {
-            filter.date = {};
-            if (startDate) {
-                filter.date.$gte = new Date(startDate);
-            }
-            if (endDate) {
-                // Add one day to include the end date fully
-                const end = new Date(endDate);
-                end.setDate(end.getDate() + 1);
-                filter.date.$lt = end;
-            }
-        }
+//         // Add date range filter if provided
+//         if (startDate || endDate) {
+//             filter.date = {};
+//             if (startDate) {
+//                 filter.date.$gte = new Date(startDate);
+//             }
+//             if (endDate) {
+//                 // Add one day to include the end date fully
+//                 const end = new Date(endDate);
+//                 end.setDate(end.getDate() + 1);
+//                 filter.date.$lt = end;
+//             }
+//         }
 
-        const billings = await Billing.find(filter)
-            .populate('operator', 'name phoneNumber expertise')
-            .populate('studio', 'studioName studioLocation')
-            .sort({ date: -1 }); // Sort by date descending
+//         const billings = await Billing.find(filter)
+//             .populate('operator', 'name phoneNumber expertise')
+//             .populate('studio', 'studioName studioLocation')
+//             .sort({ date: -1 }); // Sort by date descending
 
-        // Calculate totals
-        let totalCredit = 0;
-        let totalDebit = 0;
+//         // Calculate totals
+//         let totalCredit = 0;
+//         let totalDebit = 0;
 
-        billings.forEach(billing => {
-            if (billing.isCredit) {
-                totalCredit += billing.amount;
-            } else {
-                totalDebit += billing.amount;
-            }
-        });
+//         billings.forEach(billing => {
+//             if (billing.isCredit) {
+//                 totalCredit += billing.amount;
+//             } else {
+//                 totalDebit += billing.amount;
+//             }
+//         });
 
-        const netAmount = totalCredit - totalDebit;
+//         const netAmount = totalCredit - totalDebit;
 
-        res.status(200).json({
-            success: true,
-            count: billings.length,
-            totalCredit,
-            totalDebit,
-            netAmount,
-            dateRange: {
-                startDate: startDate || 'Not specified',
-                endDate: endDate || 'Not specified'
-            },
-            data: billings
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching billing entries for studio by date',
-            error: error.message
-        });
-    }
-});
+//         res.status(200).json({
+//             success: true,
+//             count: billings.length,
+//             totalCredit,
+//             totalDebit,
+//             netAmount,
+//             dateRange: {
+//                 startDate: startDate || 'Not specified',
+//                 endDate: endDate || 'Not specified'
+//             },
+//             data: billings
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: 'Error fetching billing entries for studio by date',
+//             error: error.message
+//         });
+//     }
+// });
 
 // READ - Get billing entries by Operator ID with Date Range
-router.get('/operator/:operatorId/date', async (req, res) => {
-    try {
-        const { startDate, endDate } = req.query;
+// router.get('/operator/:operatorId/date', async (req, res) => {
+//     try {
+//         const { startDate, endDate } = req.query;
 
-        // Build query filter
-        const filter = { operator: req.params.operatorId };
+//         // Build query filter
+//         const filter = { operator: req.params.operatorId };
 
-        // Add date range filter if provided
-        if (startDate || endDate) {
-            filter.date = {};
-            if (startDate) {
-                filter.date.$gte = new Date(startDate);
-            }
-            if (endDate) {
-                // Add one day to include the end date fully
-                const end = new Date(endDate);
-                end.setDate(end.getDate() + 1);
-                filter.date.$lt = end;
-            }
-        }
+//         // Add date range filter if provided
+//         if (startDate || endDate) {
+//             filter.date = {};
+//             if (startDate) {
+//                 filter.date.$gte = new Date(startDate);
+//             }
+//             if (endDate) {
+//                 // Add one day to include the end date fully
+//                 const end = new Date(endDate);
+//                 end.setDate(end.getDate() + 1);
+//                 filter.date.$lt = end;
+//             }
+//         }
 
-        const billings = await Billing.find(filter)
-            .populate('operator', 'name phoneNumber expertise')
-            .populate('studio', 'studioName studioLocation')
-            .sort({ date: -1 }); // Sort by date descending
+//         const billings = await Billing.find(filter)
+//             .populate('operator', 'name phoneNumber expertise')
+//             .populate('studio', 'studioName studioLocation')
+//             .sort({ date: -1 }); // Sort by date descending
 
-        // Calculate totals
-        let totalCredit = 0;
-        let totalDebit = 0;
+//         // Calculate totals
+//         let totalCredit = 0;
+//         let totalDebit = 0;
 
-        billings.forEach(billing => {
-            if (billing.isCredit) {
-                totalCredit += billing.amount;
-            } else {
-                totalDebit += billing.amount;
-            }
-        });
+//         billings.forEach(billing => {
+//             if (billing.isCredit) {
+//                 totalCredit += billing.amount;
+//             } else {
+//                 totalDebit += billing.amount;
+//             }
+//         });
 
-        const netAmount = totalCredit - totalDebit;
+//         const netAmount = totalCredit - totalDebit;
 
-        res.status(200).json({
-            success: true,
-            count: billings.length,
-            totalCredit,
-            totalDebit,
-            netAmount,
-            dateRange: {
-                startDate: startDate || 'Not specified',
-                endDate: endDate || 'Not specified'
-            },
-            data: billings
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching billing entries for operator by date',
-            error: error.message
-        });
-    }
-});
+//         res.status(200).json({
+//             success: true,
+//             count: billings.length,
+//             totalCredit,
+//             totalDebit,
+//             netAmount,
+//             dateRange: {
+//                 startDate: startDate || 'Not specified',
+//                 endDate: endDate || 'Not specified'
+//             },
+//             data: billings
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: 'Error fetching billing entries for operator by date',
+//             error: error.message
+//         });
+//     }
+// });
 
-// READ - Get a single billing entry by ID
-router.get('/:id', async (req, res) => {
-    try {
-        const billing = await Billing.findById(req.params.id)
-            .populate('operator', 'name phoneNumber expertise')
-            .populate('studio', 'studioName studioLocation');
-        if (!billing) {
-            return res.status(404).json({
-                success: false,
-                message: 'Billing entry not found'
-            });
-        }
-        res.status(200).json({
-            success: true,
-            data: billing
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching billing entry',
-            error: error.message
-        });
-    }
-});
+// // READ - Get a single billing entry by ID
+// router.get('/:id', async (req, res) => {
+//     try {
+//         const billing = await Billing.findById(req.params.id)
+//             .populate('operator', 'name phoneNumber expertise')
+//             .populate('studio', 'studioName studioLocation');
+//         if (!billing) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'Billing entry not found'
+//             });
+//         }
+//         res.status(200).json({
+//             success: true,
+//             data: billing
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: 'Error fetching billing entry',
+//             error: error.message
+//         });
+//     }
+// });
 
 // UPDATE - Update a billing entry by ID
 router.post('/update/:id', async (req, res) => {

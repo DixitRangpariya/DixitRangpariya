@@ -19,6 +19,8 @@ connectDB();
 app.use('/api/operators', operatorRoutes);
 app.use('/api/studios', studioRoutes);
 app.use('/api/billings', billingRoutes);
+app.use('/api/operator-payments', require('./routes/operatorPayments'));
+app.use('/api/studio-payments', require('./routes/studioPayments'));
 
 // Root route
 app.get('/', (req, res) => {
