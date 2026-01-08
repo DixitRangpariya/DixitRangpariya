@@ -60,8 +60,7 @@ router.get('/studio/:studioId', async (req, res) => {
         // Get payments from StudioPayment
         const payments = await StudioPayment.find({ studio: req.params.studioId });
         let totalReceived = 0;
-        let totalPaid = 0;
-
+        let totalPaid = 0
         payments.forEach(payment => {
             if (payment.type === 0) { // Received
                 totalReceived += payment.amount;
@@ -338,7 +337,7 @@ router.delete('/:id', async (req, res) => {
 // EXPORT - Export billing entries by Studio ID
 router.post('/export/studio', async (req, res) => {
     try {
-        const { studioId, startDate, endDate, paymentStatus, isCredit } = req.body;
+        const { studioId, startDate, endDate, paymentStatus } = req.body;
 
         if (!studioId) {
             return res.status(400).json({
@@ -363,9 +362,7 @@ router.post('/export/studio', async (req, res) => {
             query.paymentStatus = paymentStatus;
         }
 
-        if (isCredit !== undefined) {
-            query.isCredit = isCredit;
-        }
+
 
         const billings = await Billing.find(query)
             .populate('operator', 'name phoneNumber expertise')
@@ -396,7 +393,7 @@ router.post('/export/studio', async (req, res) => {
 // EXPORT - Export billing entries by Operator ID
 router.post('/export/operator', async (req, res) => {
     try {
-        const { operatorId, startDate, endDate, paymentStatus, isCredit } = req.body;
+        const { operatorId, startDate, endDate, paymentStatus } = req.body;
 
         if (!operatorId) {
             return res.status(400).json({
@@ -421,9 +418,7 @@ router.post('/export/operator', async (req, res) => {
             query.paymentStatus = paymentStatus;
         }
 
-        if (isCredit !== undefined) {
-            query.isCredit = isCredit;
-        }
+
 
         const billings = await Billing.find(query)
             .populate('operator', 'name phoneNumber expertise')

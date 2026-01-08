@@ -22,6 +22,30 @@ router.post('/', async (req, res) => {
     }
 });
 
+// DELETE - Delete a payment by ID
+router.delete('/:id', async (req, res) => {
+    try {
+        const payment = await OperatorPayment.findByIdAndDelete(req.params.id);
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment not found'
+            });
+        }
+        res.status(200).json({
+            success: true,
+            message: 'Payment deleted successfully',
+            data: payment
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting payment',
+            error: error.message
+        });
+    }
+});
+
 // READ - Get payments by Operator ID
 router.get('/operator/:operatorId', async (req, res) => {
     try {
@@ -102,6 +126,95 @@ router.get('/ledger/:operatorId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error local fetching ledger',
+            error: error.message
+        });
+    }
+});
+
+// EXPORT - Export ledger for Operator
+router.post('/export', async (req, res) => {
+    try {
+        const { operatorId, startDate, endDate } = req.body;
+
+        if (!operatorId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Operator ID is required'
+            });
+        }
+
+        // Build query for date range
+        const query = { operator: operatorId };
+
+        let rangeDetails = {
+            startDate: 'All Time',
+            endDate: 'All Time'
+        };
+
+        if (startDate || endDate) {
+            query.date = {};
+            if (startDate) {
+                query.date.$gte = new Date(startDate);
+                rangeDetails.startDate = startDate;
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setDate(end.getDate() + 1); // Include full end day
+                query.date.$lt = end;
+                rangeDetails.endDate = endDate;
+            }
+        }
+
+        // Fetch all bills (Earnings)
+        const bills = await Billing.find(query)
+            .populate('studio', 'studioName')
+            .sort({ date: 1 });
+
+        // Fetch all payments (Paid)
+        const payments = await OperatorPayment.find(query)
+            .sort({ date: 1 });
+
+        // Calculate Totals
+        let totalEarnings = 0;
+        let totalPaid = 0;
+
+        const earningsList = bills.map(bill => {
+            const amount = bill.operatorAmount || 0;
+            totalEarnings += amount;
+            return {
+                date: bill.date,
+                description: bill.event || 'Bill',
+                amount: amount,
+                studio: bill.studio ? bill.studio.studioName : 'Unknown'
+            };
+        });
+
+        const paymentsList = payments.map(payment => {
+            totalPaid += payment.amount;
+            return {
+                date: payment.date,
+                paymentMode: payment.paymentMode,
+                note: payment.note,
+                amount: payment.amount
+            };
+        });
+
+        const netBalance = totalEarnings - totalPaid;
+
+        res.status(200).json({
+            success: true,
+            dateRange: rangeDetails,
+            totalEarnings,
+            totalPaid,
+            netBalance,
+            earnings: earningsList,
+            payments: paymentsList
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error exporting ledger',
             error: error.message
         });
     }

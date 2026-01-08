@@ -144,7 +144,6 @@ curl -X DELETE http://localhost:5000/api/operators/65dbf2a1b9f1c8a1b9f1c8a1
   "date": "2024-01-15T00:00:00.000Z",
   "type": "Wedding",
   "studio": "65dbf2a1b9f1c8a1b9f1c8a1",
-  "isCredit": false,
   "amount": 5000,
   "operator": "65dbf2a1b9f1c8a1b9f1c8a2",
   "otherOperator": "Amit",
@@ -158,7 +157,7 @@ curl -X DELETE http://localhost:5000/api/operators/65dbf2a1b9f1c8a1b9f1c8a1
 ```bash
 curl -X POST http://localhost:5000/api/billings \
   -H "Content-Type: application/json" \
-  -d '{"date": "2024-01-15", "type": "Wedding", "studio": "STUDIO_ID", "isCredit": false, "amount": 5000, "operator": "OPERATOR_ID", "otherOperator": "Amit", "operatorAmount": 2000, "place": "Hotel Grand", "event": "Reception"}'
+  -d '{"date": "2024-01-15", "type": "Wedding", "studio": "STUDIO_ID", "amount": 5000, "operator": "OPERATOR_ID", "otherOperator": "Amit", "operatorAmount": 2000, "place": "Hotel Grand", "event": "Reception"}'
 ```
 
 ### Get All Billings
@@ -237,7 +236,6 @@ curl -X DELETE http://localhost:5000/api/billings/65dbf2a1b9f1c8a1b9f1c8a3
   "startDate": "2024-01-01",
   "endDate": "2024-01-31",
   "paymentStatus": false,
-  "isCredit": true
 }
 ```
 **cURL:**
@@ -299,4 +297,44 @@ curl -X GET http://localhost:5000/api/operator-payments/operator/65dbf2a1b9f1c8a
 **cURL:**
 ```bash
 curl -X GET http://localhost:5000/api/operator-payments/ledger/65dbf2a1b9f1c8a1b9f1c8a2
+```
+
+---
+
+## Studio Payments
+
+### Create Payment (Received/Paid)
+**Endpoint:** `POST /api/studio-payments`
+**Payload:**
+```json
+{
+  "studio": "65dbf2a1b9f1c8a1b9f1c8a1",
+  "amount": 2000,
+  "type": 0,
+  "date": "2024-02-01",
+  "paymentMode": "Online",
+  "note": "Advance payment"
+}
+```
+*Note: `type`: 0 for Received from Studio, 1 for Paid to Studio*
+
+**cURL:**
+```bash
+curl -X POST http://localhost:5000/api/studio-payments \
+  -H "Content-Type: application/json" \
+  -d '{"studio": "65dbf2a1b9f1c8a1b9f1c8a1", "amount": 2000, "type": 0, "paymentMode": "Online", "note": "Advance payment"}'
+```
+
+### Get Payments by Studio
+**Endpoint:** `GET /api/studio-payments/studio/:studioId`
+**cURL:**
+```bash
+curl -X GET http://localhost:5000/api/studio-payments/studio/65dbf2a1b9f1c8a1b9f1c8a1
+```
+
+### Get Studio Ledger
+**Endpoint:** `GET /api/studio-payments/ledger/:studioId`
+**cURL:**
+```bash
+curl -X GET http://localhost:5000/api/studio-payments/ledger/65dbf2a1b9f1c8a1b9f1c8a1
 ```
