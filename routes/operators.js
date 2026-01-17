@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Operator = require('../models/Operator');
+const Billing = require('../models/Billing');
 
 // CREATE - Add a new operator
 router.post('/', async (req, res) => {
@@ -122,6 +123,15 @@ router.post('/update/:id', async (req, res) => {
 // DELETE - Delete an operator by ID
 router.delete('/:id', async (req, res) => {
     try {
+        // Check if operator has any associated bills
+        const billCount = await Billing.countDocuments({ operator: req.params.id });
+        if (billCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete operator. It is associated with existing bills.'
+            });
+        }
+
         const operator = await Operator.findByIdAndDelete(req.params.id);
         if (!operator) {
             return res.status(404).json({

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Studio = require('../models/Studio');
+const Billing = require('../models/Billing');
 
 // CREATE - Add a new studio
 router.post('/', async (req, res) => {
@@ -122,6 +123,15 @@ router.post('/update/:id', async (req, res) => {
 // DELETE - Delete a studio by ID
 router.delete('/:id', async (req, res) => {
     try {
+        // Check if studio has any associated bills
+        const billCount = await Billing.countDocuments({ studio: req.params.id });
+        if (billCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete studio. It is associated with existing bills.'
+            });
+        }
+
         const studio = await Studio.findByIdAndDelete(req.params.id);
         if (!studio) {
             return res.status(404).json({
