@@ -174,8 +174,9 @@ router.post('/export', async (req, res) => {
             }
         }
 
-        // Fetch all bills (Billed)
+        // Fetch all bills (Billed) with operator details
         const bills = await Billing.find(query)
+            .populate('operator', 'name phoneNumber expertise')
             .sort({ date: 1 });
 
         // Fetch all payments (Received/Paid)
@@ -192,7 +193,12 @@ router.post('/export', async (req, res) => {
             return {
                 date: bill.date,
                 description: bill.event || 'Bill',
-                amount: bill.amount
+                amount: bill.amount,
+                operator: bill.operator ? {
+                    name: bill.operator.name,
+                    phoneNumber: bill.operator.phoneNumber,
+                    expertise: bill.operator.expertise
+                } : null
             };
         });
 
