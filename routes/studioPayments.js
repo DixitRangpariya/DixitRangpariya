@@ -193,6 +193,7 @@ router.post('/export', async (req, res) => {
             return {
                 date: bill.date,
                 description: bill.event || 'Bill',
+                type: bill.type,
                 amount: bill.amount,
                 operator: bill.operator ? {
                     name: bill.operator.name,
